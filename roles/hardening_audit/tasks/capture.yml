@@ -1,0 +1,34 @@
+---
+- name: Validate hardening audit capture settings
+  ansible.builtin.assert:
+    that:
+      - hardening_audit_role_name is defined
+      - hardening_audit_role_name | length > 0
+    fail_msg: hardening_audit_role_name must be set when capturing a baseline
+    quiet: true
+  tags:
+    - always
+    - hardening_audit
+
+- name: Capture pre-hardening baseline
+  devsec.hardening.hardening_audit:
+    action: capture
+    role: "{{ hardening_audit_role_name }}"
+    files: "{{ hardening_audit_role_files }}"
+    checks: "{{ hardening_audit_role_checks }}"
+    sysctl: "{{ hardening_audit_role_sysctl }}"
+    file_expectations: "{{ hardening_audit_role_file_expectations }}"
+    command_timeout: "{{ hardening_audit_command_timeout }}"
+  register: hardening_audit_capture
+  changed_when: false
+  check_mode: false
+  tags:
+    - always
+    - hardening_audit
+
+- name: Store pre-hardening baseline
+  ansible.builtin.set_fact:
+    hardening_audit_before: "{{ hardening_audit_capture.snapshot }}"
+  tags:
+    - always
+    - hardening_audit

@@ -59,6 +59,7 @@ The other roles are in separate archives repositories:
 - [mysql_hardening](roles/mysql_hardening/)
 - [nginx_hardening](roles/nginx_hardening/)
 - [ssh_hardening](roles/ssh_hardening/)
+- [hardening_audit](roles/hardening_audit/) (internal shared validation role)
 
 In progress, not working:
 
@@ -76,6 +77,48 @@ Install the collection via ansible-galaxy:
 Please refer to the examples in the readmes of the role.
 
 See [Ansible Using collections](https://docs.ansible.com/ansible/latest/user_guide/collections_using.html) for more details.
+
+## Hardening baseline comparison and compliance reports
+
+The four hardening roles automatically capture the relevant configuration
+before they change a host and compare it after they finish. Expected values are
+read from the existing role variables, so existing playbooks keep the same
+override behaviour and do not need a second set of compliance settings.
+
+Each host receives a merged report at
+`/var/log/devsec-hardening/hardening-baseline.json`. It contains:
+
+- before/after hashes, modes and ownership for every captured file;
+- item level changes with the old value, new value and expected value;
+- unified diffs for changed files, including lines not covered by a named check;
+- a `noncompliant` list for values that still differ from the role variables;
+- per-role and aggregate summaries.
+
+The following shared variables control reporting:
+
+```yaml
+hardening_audit_enabled: true
+hardening_audit_fail_on_noncompliance: false
+hardening_audit_report_file: /var/log/devsec-hardening/hardening-baseline.json
+hardening_audit_command_timeout: 30
+hardening_audit_show_summary: true
+hardening_audit_fetch_report: false
+hardening_audit_controller_report_dir: "{{ playbook_dir }}/hardening-reports"
+```
+
+Set `hardening_audit_fail_on_noncompliance: true` for a strict pipeline. The
+report is written before the role fails. SSH and nginx additionally validate
+their effective configuration with `sshd -T` and `nginx -t`.
+
+The report has no timestamp and is only rewritten when a role produces a new
+configuration change. Re-running an already hardened host therefore produces no
+new file change and leaves the original comparison available.
+
+The acceptance scenario runs against Debian 13, Ubuntu 24.04 and AlmaLinux 9:
+
+```shell
+molecule test -s hardening_audit
+```
 
 ## Contributing to this collection
 

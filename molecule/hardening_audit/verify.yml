@@ -1,0 +1,54 @@
+---
+- name: Verify baseline comparison reports on three distributions
+  hosts: all
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Read the host hardening report
+      ansible.builtin.slurp:
+        src: /var/log/devsec-hardening/hardening-baseline.json
+      register: hardening_report_raw
+
+    - name: Parse the host hardening report
+      ansible.builtin.set_fact:
+        hardening_report: "{{ hardening_report_raw.content | b64decode | from_json }}"
+
+    - name: Select login.defs changes
+      ansible.builtin.set_fact:
+        pass_max_days_change: >-
+          {{
+            hardening_report.changes
+            | selectattr('id', 'equalto', 'login_defs.PASS_MAX_DAYS')
+            | list
+          }}
+        umask_change: >-
+          {{
+            hardening_report.changes
+            | selectattr('id', 'equalto', 'login_defs.UMASK')
+            | list
+          }}
+        login_defs_file_change: >-
+          {{
+            hardening_report.file_changes
+            | selectattr('path', 'equalto', '/etc/login.defs')
+            | list
+          }}
+
+    - name: Verify the report identifies the changed configuration items
+      ansible.builtin.assert:
+        that:
+          - hardening_report.host == inventory_hostname
+          - hardening_report.distribution == ansible_facts.distribution
+          - hardening_report.roles.os_hardening is defined
+          - pass_max_days_change | length == 1
+          - pass_max_days_change[0].before == '99999'
+          - pass_max_days_change[0].after == '60'
+          - umask_change | length == 1
+          - umask_change[0].before == '022'
+          - umask_change[0].after == umask_change[0].expected
+          - login_defs_file_change | length == 1
+          - login_defs_file_change[0].diff | length > 0
+          - hardening_report.noncompliant | length == 0
+        fail_msg: >-
+          The baseline report did not accurately describe the changes on
+          {{ ansible_facts.distribution }} {{ ansible_facts.distribution_version }}

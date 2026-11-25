@@ -1,0 +1,142 @@
+---
+os_hardening_audit_files:
+  - path: /etc/login.defs
+    enabled: "{{ os_login_defs_enabled | bool }}"
+  - path: /etc/profile.d/tmout.sh
+    enabled: "{{ os_profile_enabled | bool }}"
+  - path: /etc/security/limits.d/10.hardcore.conf
+    enabled: "{{ os_limits_enabled | bool and not (os_security_kernel_enable_core_dump | bool) }}"
+  - path: /etc/sysctl.d/90-dev-sec.conf
+    enabled: "{{ os_sysctl_enabled | bool }}"
+  - path: /etc/audit/auditd.conf
+    enabled: "{{ os_auditd_enabled | bool }}"
+  - path: /etc/sysconfig/init
+    enabled: "{{ ansible_facts.os_family == 'RedHat' }}"
+  - path: /etc/default/ufw
+    enabled: "{{ ufw_manage_defaults | bool and ansible_facts.os_family == 'Debian' }}"
+
+os_hardening_audit_checks:
+  - id: login_defs.PASS_MAX_DAYS
+    path: /etc/login.defs
+    key: PASS_MAX_DAYS
+    expected: "{{ os_auth_pw_max_age }}"
+    enabled: "{{ os_login_defs_enabled | bool }}"
+  - id: login_defs.PASS_WARN_AGE
+    path: /etc/login.defs
+    key: PASS_WARN_AGE
+    expected: "{{ os_auth_pw_warn_age }}"
+    enabled: "{{ os_login_defs_enabled | bool }}"
+  - id: login_defs.UMASK
+    path: /etc/login.defs
+    key: UMASK
+    expected: "{{ os_env_umask }}"
+    enabled: "{{ os_login_defs_enabled | bool }}"
+  - id: login_defs.LOGIN_RETRIES
+    path: /etc/login.defs
+    key: LOGIN_RETRIES
+    expected: "{{ os_auth_retries }}"
+    enabled: "{{ os_login_defs_enabled | bool }}"
+  - id: login_defs.LOGIN_TIMEOUT
+    path: /etc/login.defs
+    key: LOGIN_TIMEOUT
+    expected: "{{ os_auth_timeout }}"
+    enabled: "{{ os_login_defs_enabled | bool }}"
+  - id: login_defs.DEFAULT_HOME
+    path: /etc/login.defs
+    key: DEFAULT_HOME
+    expected: "{{ 'yes' if os_auth_allow_homeless | bool else 'no' }}"
+    case_sensitive: false
+    enabled: "{{ os_login_defs_enabled | bool }}"
+  - id: login_defs.ENCRYPT_METHOD
+    path: /etc/login.defs
+    key: ENCRYPT_METHOD
+    expected: SHA512
+    enabled: "{{ os_login_defs_enabled | bool }}"
+  - id: login_defs.MD5_CRYPT_ENAB
+    path: /etc/login.defs
+    key: MD5_CRYPT_ENAB
+    expected: "no"
+    case_sensitive: false
+    enabled: "{{ os_login_defs_enabled | bool }}"
+  - id: login_defs.SHA_CRYPT_MIN_ROUNDS
+    path: /etc/login.defs
+    key: SHA_CRYPT_MIN_ROUNDS
+    expected: "{{ os_sha_crypt_min_rounds }}"
+    enabled: "{{ os_login_defs_enabled | bool }}"
+  - id: login_defs.SHA_CRYPT_MAX_ROUNDS
+    path: /etc/login.defs
+    key: SHA_CRYPT_MAX_ROUNDS
+    expected: "{{ os_sha_crypt_max_rounds }}"
+    enabled: "{{ os_login_defs_enabled | bool }}"
+  - id: profile.TMOUT
+    type: line
+    path: /etc/profile.d/tmout.sh
+    pattern: "^export TMOUT={{ os_security_auto_logout }}$"
+    expected: true
+    match: present
+    enabled: "{{ os_profile_enabled | bool }}"
+  - id: limits.core
+    type: line
+    path: /etc/security/limits.d/10.hardcore.conf
+    pattern: '^\*\s+hard\s+core\s+0$'
+    expected: true
+    match: present
+    enabled: "{{ os_limits_enabled | bool and not (os_security_kernel_enable_core_dump | bool) }}"
+  - id: auditd.max_log_file_action
+    path: /etc/audit/auditd.conf
+    key: max_log_file_action
+    expected: "{{ os_auditd_max_log_file_action }}"
+    case_sensitive: false
+    enabled: "{{ os_auditd_enabled | bool }}"
+  - id: auditd.space_left_action
+    path: /etc/audit/auditd.conf
+    key: space_left_action
+    expected: "{{ os_auditd_space_left_action }}"
+    case_sensitive: false
+    enabled: "{{ os_auditd_enabled | bool }}"
+  - id: auditd.disk_full_action
+    path: /etc/audit/auditd.conf
+    key: disk_full_action
+    expected: "{{ os_auditd_disk_full_action }}"
+    case_sensitive: false
+    enabled: "{{ os_auditd_enabled | bool }}"
+  - id: auditd.disk_error_action
+    path: /etc/audit/auditd.conf
+    key: disk_error_action
+    expected: "{{ os_auditd_disk_error_action }}"
+    case_sensitive: false
+    enabled: "{{ os_auditd_enabled | bool }}"
+  - id: rhel_init.umask
+    type: line
+    path: /etc/sysconfig/init
+    pattern: "^umask 027$"
+    expected: true
+    match: present
+    enabled: "{{ ansible_facts.os_family == 'RedHat' }}"
+  - id: rhel_init.PROMPT
+    path: /etc/sysconfig/init
+    key: PROMPT
+    expected: "{{ 'yes' if os_security_init_prompt | bool else 'no' }}"
+    case_sensitive: false
+    enabled: "{{ ansible_facts.os_family == 'RedHat' }}"
+  - id: rhel_init.SINGLE
+    path: /etc/sysconfig/init
+    key: SINGLE
+    expected: "{{ '/sbin/sulogin' if os_security_init_single | bool else '/sbin/sushell' }}"
+    enabled: "{{ ansible_facts.os_family == 'RedHat' }}"
+
+os_hardening_audit_sysctl: >-
+  {{
+    (
+      ((sysctl_config
+        | combine(sysctl_custom_config | default({})))
+        | combine(sysctl_rhel_config | default({})))
+      | combine(sysctl_overwrite | default({}))
+      | dict2items
+      | rejectattr('key', 'in', sysctl_unsupported_entries | default([]))
+      | items2dict
+    )
+    if (os_sysctl_enabled | bool)
+       and (ansible_facts.virtualization_type | default('') not in ['docker', 'lxc', 'openvz'])
+    else {}
+  }}

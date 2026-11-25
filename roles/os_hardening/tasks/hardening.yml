@@ -28,6 +28,27 @@
   with_dict: "{{ os_vars }}"
   tags: always
 
+- name: Load hardening audit checks
+  ansible.builtin.include_vars:
+    file: audit.yml
+  tags:
+    - always
+    - hardening_audit
+
+- name: Capture pre-hardening baseline
+  ansible.builtin.include_role:
+    name: devsec.hardening.hardening_audit
+    tasks_from: capture
+  vars:
+    hardening_audit_role_name: os_hardening
+    hardening_audit_role_files: "{{ os_hardening_audit_files }}"
+    hardening_audit_role_checks: "{{ os_hardening_audit_checks }}"
+    hardening_audit_role_sysctl: "{{ os_hardening_audit_sysctl }}"
+  when: hardening_audit_enabled | default(true) | bool
+  tags:
+    - always
+    - hardening_audit
+
 - name: Import tasks for auditd
   ansible.builtin.import_tasks: auditd.yml
   tags: auditd
@@ -123,3 +144,17 @@
   when:
     - ansible_facts.selinux.status == 'enabled'
     - os_selinux_enabled | bool
+
+- name: Compare hardening baseline and write report
+  ansible.builtin.include_role:
+    name: devsec.hardening.hardening_audit
+    tasks_from: report
+  vars:
+    hardening_audit_role_name: os_hardening
+    hardening_audit_role_files: "{{ os_hardening_audit_files }}"
+    hardening_audit_role_checks: "{{ os_hardening_audit_checks }}"
+    hardening_audit_role_sysctl: "{{ os_hardening_audit_sysctl }}"
+  when: hardening_audit_enabled | default(true) | bool
+  tags:
+    - always
+    - hardening_audit

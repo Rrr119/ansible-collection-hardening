@@ -59,6 +59,28 @@
     - mysql_version.version.full is version('8.0.3', '>=')
     - mysql_distribution == "mysql"
 
+- name: Load hardening audit checks
+  ansible.builtin.include_vars:
+    file: audit.yml
+  tags:
+    - always
+    - hardening_audit
+
+- name: Capture pre-hardening baseline
+  ansible.builtin.include_role:
+    name: devsec.hardening.hardening_audit
+    tasks_from: capture
+  vars:
+    hardening_audit_role_name: mysql_hardening
+    hardening_audit_role_files: "{{ mysql_hardening_audit_files }}"
+    hardening_audit_role_checks: "{{ mysql_hardening_audit_checks }}"
+    hardening_audit_role_sysctl: {}
+    hardening_audit_role_file_expectations: "{{ mysql_hardening_audit_file_expectations }}"
+  when: hardening_audit_enabled | default(true) | bool
+  tags:
+    - always
+    - hardening_audit
+
 - name: Include tasks for configuration
   ansible.builtin.import_tasks: configure.yml
   when: mysql_hardening_enabled | bool
@@ -71,3 +93,18 @@
   tags:
     - mysql_hardening
     - mysql_secure_installation
+
+- name: Compare hardening baseline and write report
+  ansible.builtin.include_role:
+    name: devsec.hardening.hardening_audit
+    tasks_from: report
+  vars:
+    hardening_audit_role_name: mysql_hardening
+    hardening_audit_role_files: "{{ mysql_hardening_audit_files }}"
+    hardening_audit_role_checks: "{{ mysql_hardening_audit_checks }}"
+    hardening_audit_role_sysctl: {}
+    hardening_audit_role_file_expectations: "{{ mysql_hardening_audit_file_expectations }}"
+  when: hardening_audit_enabled | default(true) | bool
+  tags:
+    - always
+    - hardening_audit

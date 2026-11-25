@@ -1,0 +1,62 @@
+---
+- name: Compare hardening baseline and write report
+  devsec.hardening.hardening_audit:
+    action: compare
+    role: "{{ hardening_audit_role_name }}"
+    before: "{{ hardening_audit_before }}"
+    files: "{{ hardening_audit_role_files }}"
+    checks: "{{ hardening_audit_role_checks }}"
+    sysctl: "{{ hardening_audit_role_sysctl }}"
+    file_expectations: "{{ hardening_audit_role_file_expectations }}"
+    report_file: "{{ hardening_audit_report_file }}"
+    fail_on_noncompliance: "{{ hardening_audit_fail_on_noncompliance | bool }}"
+    host: "{{ inventory_hostname }}"
+    distribution: "{{ ansible_facts.distribution | default('') }}"
+    distribution_version: "{{ ansible_facts.distribution_version | default('') }}"
+    os_family: "{{ ansible_facts.os_family | default('') }}"
+    command_timeout: "{{ hardening_audit_command_timeout }}"
+  register: hardening_audit_result
+  when: hardening_audit_before is defined
+  tags:
+    - always
+    - hardening_audit
+
+- name: Store hardening audit result
+  ansible.builtin.set_fact:
+    hardening_audit_report: "{{ hardening_audit_result.report }}"
+    hardening_audit_changes: "{{ hardening_audit_result.changes }}"
+    hardening_audit_noncompliant: "{{ hardening_audit_result.noncompliant }}"
+  when:
+    - hardening_audit_result is defined
+    - hardening_audit_result.report is defined
+  tags:
+    - always
+    - hardening_audit
+
+- name: Display hardening audit summary
+  ansible.builtin.debug:
+    msg: >-
+      {{ hardening_audit_role_name }}: {{ hardening_audit_result.summary.changed }}
+      changed item(s), {{ hardening_audit_result.summary.noncompliant }}
+      noncompliant item(s). Report: {{ hardening_audit_result.report_file }}
+  when:
+    - hardening_audit_show_summary | bool
+    - hardening_audit_result is defined
+    - hardening_audit_result.summary is defined
+  tags:
+    - always
+    - hardening_audit
+
+- name: Fetch hardening report to the control node
+  ansible.builtin.fetch:
+    src: "{{ hardening_audit_report_file }}"
+    dest: "{{ hardening_audit_controller_report_dir }}/"
+    flat: false
+  changed_when: false
+  when:
+    - hardening_audit_fetch_report | bool
+    - hardening_audit_result is defined
+    - hardening_audit_result.report_file | length > 0
+  tags:
+    - always
+    - hardening_audit

@@ -1,4 +1,25 @@
 ---
+- name: Load hardening audit checks
+  ansible.builtin.include_vars:
+    file: audit.yml
+  tags:
+    - always
+    - hardening_audit
+
+- name: Capture pre-hardening baseline
+  ansible.builtin.include_role:
+    name: devsec.hardening.hardening_audit
+    tasks_from: capture
+  vars:
+    hardening_audit_role_name: nginx_hardening
+    hardening_audit_role_files: "{{ nginx_hardening_audit_files }}"
+    hardening_audit_role_checks: "{{ nginx_hardening_audit_checks }}"
+    hardening_audit_role_sysctl: {}
+  when: hardening_audit_enabled | default(true) | bool
+  tags:
+    - always
+    - hardening_audit
+
 - name: Create additional configuration
   ansible.builtin.template:
     src: hardening.conf.j2
@@ -92,3 +113,17 @@
     owner: "{{ nginx_owner_user }}"
     group: "{{ nginx_owner_group }}"
   notify: Restart nginx
+
+- name: Compare hardening baseline and write report
+  ansible.builtin.include_role:
+    name: devsec.hardening.hardening_audit
+    tasks_from: report
+  vars:
+    hardening_audit_role_name: nginx_hardening
+    hardening_audit_role_files: "{{ nginx_hardening_audit_files }}"
+    hardening_audit_role_checks: "{{ nginx_hardening_audit_checks }}"
+    hardening_audit_role_sysctl: {}
+  when: hardening_audit_enabled | default(true) | bool
+  tags:
+    - always
+    - hardening_audit

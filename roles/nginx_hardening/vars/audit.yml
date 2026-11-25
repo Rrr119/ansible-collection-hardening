@@ -1,0 +1,83 @@
+---
+nginx_hardening_audit_files:
+  - path: "{{ nginx_configuration_dir }}/nginx.conf"
+  - path: "{{ nginx_configuration_dir }}/conf.d/90.hardening.conf"
+
+nginx_hardening_audit_checks:
+  - id: nginx.config_valid
+    type: command_status
+    command: ["nginx", "-t"]
+    expected: 0
+  - id: nginx.server_tokens
+    path: "{{ nginx_configuration_dir }}/nginx.conf"
+    key: server_tokens
+    expected: "{{ nginx_server_tokens }}"
+    case_sensitive: false
+  - id: nginx.ssl_protocols
+    path: "{{ nginx_configuration_dir }}/nginx.conf"
+    key: ssl_protocols
+    expected: "{{ nginx_ssl_protocols }}"
+  - id: nginx.ssl_prefer_server_ciphers
+    path: "{{ nginx_configuration_dir }}/nginx.conf"
+    key: ssl_prefer_server_ciphers
+    expected: "{{ nginx_ssl_prefer_server_ciphers }}"
+    case_sensitive: false
+  - id: nginx.client_max_body_size
+    path: "{{ nginx_configuration_dir }}/nginx.conf"
+    key: client_max_body_size
+    expected: "{{ nginx_client_max_body_size }}"
+  - id: nginx.client_body_buffer_size
+    path: "{{ nginx_configuration_dir }}/nginx.conf"
+    key: client_body_buffer_size
+    expected: "{{ nginx_client_body_buffer_size }}"
+  - id: nginx.keepalive_timeout
+    path: "{{ nginx_configuration_dir }}/nginx.conf"
+    key: keepalive_timeout
+    expected: "{{ nginx_keepalive_timeout }}"
+  - id: nginx.client_header_buffer_size
+    path: "{{ nginx_configuration_dir }}/conf.d/90.hardening.conf"
+    key: client_header_buffer_size
+    expected: "{{ nginx_client_header_buffer_size }}"
+  - id: nginx.large_client_header_buffers
+    path: "{{ nginx_configuration_dir }}/conf.d/90.hardening.conf"
+    key: large_client_header_buffers
+    expected: "{{ nginx_large_client_header_buffers }}"
+  - id: nginx.client_body_timeout
+    path: "{{ nginx_configuration_dir }}/conf.d/90.hardening.conf"
+    key: client_body_timeout
+    expected: "{{ nginx_client_body_timeout }}"
+  - id: nginx.client_header_timeout
+    path: "{{ nginx_configuration_dir }}/conf.d/90.hardening.conf"
+    key: client_header_timeout
+    expected: "{{ nginx_client_header_timeout }}"
+  - id: nginx.send_timeout
+    path: "{{ nginx_configuration_dir }}/conf.d/90.hardening.conf"
+    key: send_timeout
+    expected: "{{ nginx_send_timeout }}"
+  - id: nginx.limit_conn_zone
+    path: "{{ nginx_configuration_dir }}/conf.d/90.hardening.conf"
+    key: limit_conn_zone
+    expected: "{{ nginx_limit_conn_zone }}"
+  - id: nginx.limit_conn
+    path: "{{ nginx_configuration_dir }}/conf.d/90.hardening.conf"
+    key: limit_conn
+    expected: "{{ nginx_limit_conn }}"
+  - id: nginx.ssl_ciphers
+    path: "{{ nginx_configuration_dir }}/conf.d/90.hardening.conf"
+    key: ssl_ciphers
+    expected: "{{ nginx_ssl_ciphers }}"
+  - id: nginx.ssl_session_tickets
+    path: "{{ nginx_configuration_dir }}/conf.d/90.hardening.conf"
+    key: ssl_session_tickets
+    expected: "{{ nginx_ssl_session_tickets }}"
+    case_sensitive: false
+  - id: nginx.ssl_dhparam
+    path: "{{ nginx_configuration_dir }}/conf.d/90.hardening.conf"
+    key: ssl_dhparam
+    expected: "{{ nginx_configuration_hardening_dir }}/dh{{ nginx_dh_size }}.pem"
+  - id: nginx.add_header
+    path: "{{ nginx_configuration_dir }}/conf.d/90.hardening.conf"
+    key: add_header
+    occurrence: all
+    match: contains_all
+    expected: "{{ nginx_add_header }}"

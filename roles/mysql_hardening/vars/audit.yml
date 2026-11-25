@@ -1,0 +1,35 @@
+---
+mysql_hardening_audit_files:
+  - path: "{{ mysql_hardening_mysql_conf_file }}"
+    parser: auto
+  - path: "{{ mysql_hardening_mysql_confd_dir }}/hardening.cnf"
+    parser: ini
+
+mysql_hardening_audit_checks:
+  - id: mysql.includedir
+    path: "{{ mysql_hardening_mysql_conf_file }}"
+    key: "!includedir"
+    expected: "{{ mysql_hardening_mysql_confd_dir }}"
+  - id: mysql.skip_show_database
+    type: line
+    path: "{{ mysql_hardening_mysql_confd_dir }}/hardening.cnf"
+    pattern: "^skip-show-database$"
+    expected: true
+    match: "{{ 'present' if mysql_hardening_skip_show_database | bool else 'absent' }}"
+  - id: mysql.skip_grant_tables
+    type: line
+    path: "{{ mysql_hardening_mysql_confd_dir }}/hardening.cnf"
+    pattern: "^skip-grant-tables$"
+    expected: true
+    match: "{{ 'present' if mysql_hardening_skip_grant_tables | bool else 'absent' }}"
+  - id: mysql.chroot
+    path: "{{ mysql_hardening_mysql_confd_dir }}/hardening.cnf"
+    section: mysqld
+    key: chroot
+    expected: "{{ mysql_hardening_chroot }}"
+    enabled: "{{ mysql_hardening_chroot | length > 0 }}"
+
+mysql_hardening_audit_file_expectations:
+  - path: "{{ mysql_hardening_mysql_confd_dir }}/hardening.cnf"
+    section: mysqld
+    options: "{{ mysql_hardening_options }}"

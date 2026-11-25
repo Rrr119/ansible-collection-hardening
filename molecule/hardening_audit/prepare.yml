@@ -1,0 +1,30 @@
+---
+- name: Create configuration drift on every distribution
+  hosts: all
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Seed password ageing drift
+      ansible.builtin.lineinfile:
+        path: /etc/login.defs
+        regexp: '^PASS_MAX_DAYS\s+'
+        line: "PASS_MAX_DAYS    99999"
+        create: true
+        owner: root
+        group: root
+        mode: "0444"
+
+    - name: Seed umask drift
+      ansible.builtin.lineinfile:
+        path: /etc/login.defs
+        regexp: '^UMASK\s+'
+        line: "UMASK            022"
+        create: true
+        owner: root
+        group: root
+        mode: "0444"
+
+    - name: Remove a report from an earlier run
+      ansible.builtin.file:
+        path: /var/log/devsec-hardening/hardening-baseline.json
+        state: absent

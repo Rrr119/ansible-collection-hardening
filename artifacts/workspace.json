@@ -1,0 +1,17 @@
+{
+  "root": "/home/dev/feedback/uid38816",
+  "B": "/home/dev/feedback/uid38816",
+  "sha": "c984051e545f202faf623e644562d1a343e1ae55",
+  "wslDistro": "Ubuntu-26.04",
+  "source": {
+    "owner": "dev-sec",
+    "repo": "ansible-collection-hardening",
+    "sha": "c984051e545f202faf623e644562d1a343e1ae55"
+  },
+  "fork": {
+    "owner": "Rrr119",
+    "repo": "ansible-collection-hardening",
+    "cloneUrl": "https://github.com/Rrr119/ansible-collection-hardening.git"
+  },
+  "at": "2026-11-25T17:06:44.585Z"
+}

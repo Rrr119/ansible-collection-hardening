@@ -1,0 +1,219 @@
+---
+ssh_hardening_audit_files:
+  - path: "{{ ssh_server_config_file }}"
+    enabled: "{{ ssh_server_hardening | bool }}"
+  - path: "{{ ssh_client_config_file }}"
+    enabled: "{{ ssh_client_hardening | bool }}"
+  - path: /etc/ssh/revoked_keys
+    enabled: "{{ ssh_server_hardening | bool }}"
+  - path: /etc/sysconfig/sshd
+    enabled: "{{ sshd_disable_crypto_policy | bool and ansible_facts.os_family == 'RedHat' }}"
+
+ssh_hardening_audit_checks:
+  - id: sshd.config_valid
+    type: command_status
+    command: ["{{ sshd_path }}", "-T"]
+    expected: 0
+    enabled: "{{ ssh_server_hardening | bool }}"
+  - id: sshd.permitrootlogin
+    type: command
+    command: ["{{ sshd_path }}", "-T"]
+    key: permitrootlogin
+    expected: "{{ ssh_permit_root_login }}"
+    case_sensitive: false
+    enabled: "{{ ssh_server_hardening | bool }}"
+  - id: sshd.passwordauthentication
+    type: command
+    command: ["{{ sshd_path }}", "-T"]
+    key: passwordauthentication
+    expected: "{{ 'yes' if ssh_server_password_login | bool else 'no' }}"
+    case_sensitive: false
+    enabled: "{{ ssh_server_hardening | bool }}"
+  - id: sshd.pubkeyauthentication
+    type: command
+    command: ["{{ sshd_path }}", "-T"]
+    key: pubkeyauthentication
+    expected: "{{ 'yes' if ssh_pubkey_authentication | bool else 'no' }}"
+    case_sensitive: false
+    enabled: "{{ ssh_server_hardening | bool }}"
+  - id: sshd.permitemptypasswords
+    type: command
+    command: ["{{ sshd_path }}", "-T"]
+    key: permitemptypasswords
+    expected: "no"
+    case_sensitive: false
+    enabled: "{{ ssh_server_hardening | bool }}"
+  - id: sshd.x11forwarding
+    type: command
+    command: ["{{ sshd_path }}", "-T"]
+    key: x11forwarding
+    expected: "{{ 'yes' if ssh_x11_forwarding | bool else 'no' }}"
+    case_sensitive: false
+    enabled: "{{ ssh_server_hardening | bool }}"
+  - id: sshd.allowagentforwarding
+    type: command
+    command: ["{{ sshd_path }}", "-T"]
+    key: allowagentforwarding
+    expected: "{{ 'yes' if ssh_allow_agent_forwarding | bool else 'no' }}"
+    case_sensitive: false
+    enabled: "{{ ssh_server_hardening | bool }}"
+  - id: sshd.allowtcpforwarding
+    type: command
+    command: ["{{ sshd_path }}", "-T"]
+    key: allowtcpforwarding
+    expected: >-
+      {{
+        ssh_allow_tcp_forwarding
+        if ssh_allow_tcp_forwarding in ('yes', 'no', 'local', 'all', 'remote')
+        else ('yes' if ssh_allow_tcp_forwarding | bool else 'no')
+      }}
+    case_sensitive: false
+    enabled: "{{ ssh_server_hardening | bool }}"
+  - id: sshd.gatewayports
+    type: command
+    command: ["{{ sshd_path }}", "-T"]
+    key: gatewayports
+    expected: >-
+      {{
+        'yes' if ssh_gateway_ports | bool
+        else ('clientspecified' if ssh_gateway_ports == 'clientspecified' else 'no')
+      }}
+    case_sensitive: false
+    enabled: "{{ ssh_server_hardening | bool }}"
+  - id: sshd.maxauthtries
+    type: command
+    command: ["{{ sshd_path }}", "-T"]
+    key: maxauthtries
+    expected: "{{ ssh_max_auth_retries }}"
+    enabled: "{{ ssh_server_hardening | bool }}"
+  - id: sshd.maxsessions
+    type: command
+    command: ["{{ sshd_path }}", "-T"]
+    key: maxsessions
+    expected: "{{ ssh_max_sessions }}"
+    enabled: "{{ ssh_server_hardening | bool }}"
+  - id: sshd.maxstartups
+    type: command
+    command: ["{{ sshd_path }}", "-T"]
+    key: maxstartups
+    expected: "{{ ssh_max_startups }}"
+    enabled: "{{ ssh_server_hardening | bool }}"
+  - id: sshd.clientaliveinterval
+    type: command
+    command: ["{{ sshd_path }}", "-T"]
+    key: clientaliveinterval
+    expected: "{{ ssh_client_alive_interval }}"
+    enabled: "{{ ssh_server_hardening | bool }}"
+  - id: sshd.clientalivecountmax
+    type: command
+    command: ["{{ sshd_path }}", "-T"]
+    key: clientalivecountmax
+    expected: "{{ ssh_client_alive_count }}"
+    enabled: "{{ ssh_server_hardening | bool }}"
+  - id: sshd.permittunnel
+    type: command
+    command: ["{{ sshd_path }}", "-T"]
+    key: permittunnel
+    expected: >-
+      {{
+        'yes' if ssh_permit_tunnel is sameas true
+        else ('no' if ssh_permit_tunnel is sameas false else ssh_permit_tunnel)
+      }}
+    case_sensitive: false
+    enabled: "{{ ssh_server_hardening | bool }}"
+  - id: sshd.usedns
+    type: command
+    command: ["{{ sshd_path }}", "-T"]
+    key: usedns
+    expected: "{{ 'yes' if ssh_use_dns | bool else 'no' }}"
+    case_sensitive: false
+    enabled: "{{ ssh_server_hardening | bool }}"
+  - id: sshd.printmotd
+    type: command
+    command: ["{{ sshd_path }}", "-T"]
+    key: printmotd
+    expected: "{{ 'yes' if ssh_print_motd | bool else 'no' }}"
+    case_sensitive: false
+    enabled: "{{ ssh_server_hardening | bool }}"
+  - id: sshd.printlastlog
+    type: command
+    command: ["{{ sshd_path }}", "-T"]
+    key: printlastlog
+    expected: "{{ 'yes' if ssh_print_last_log | bool else 'no' }}"
+    case_sensitive: false
+    enabled: "{{ ssh_server_hardening | bool and ansible_facts.os_family != 'FreeBSD' }}"
+  - id: sshd.banner
+    type: command
+    command: ["{{ sshd_path }}", "-T"]
+    key: banner
+    expected: "{{ ssh_banner_path if ssh_banner | bool else 'none' }}"
+    enabled: "{{ ssh_server_hardening | bool }}"
+  - id: sshd.permituserenvironment
+    type: command
+    command: ["{{ sshd_path }}", "-T"]
+    key: permituserenvironment
+    expected: >-
+      {{
+        'yes' if ssh_server_permit_environment_vars is sameas true
+        else ('no' if ssh_server_permit_environment_vars is sameas false
+        else ssh_server_permit_environment_vars)
+      }}
+    case_sensitive: false
+    enabled: "{{ ssh_server_hardening | bool }}"
+  - id: sshd.compression
+    type: command
+    command: ["{{ sshd_path }}", "-T"]
+    key: compression
+    expected: "{{ 'yes' if ssh_compression | bool else 'no' }}"
+    case_sensitive: false
+    enabled: "{{ ssh_server_hardening | bool }}"
+  - id: sshd.strictmodes
+    type: command
+    command: ["{{ sshd_path }}", "-T"]
+    key: strictmodes
+    expected: "{{ 'yes' if sshd_strict_modes | bool else 'no' }}"
+    case_sensitive: false
+    enabled: "{{ ssh_server_hardening | bool }}"
+  - id: sshd.usepam
+    type: command
+    command: ["{{ sshd_path }}", "-T"]
+    key: usepam
+    expected: "{{ 'yes' if ssh_use_pam | bool else 'no' }}"
+    case_sensitive: false
+    enabled: "{{ ssh_server_hardening | bool and ssh_pam_support | bool }}"
+  - id: sshd.authenticationmethods
+    type: command
+    command: ["{{ sshd_path }}", "-T"]
+    key: authenticationmethods
+    expected: "{{ sshd_authenticationmethods }}"
+    enabled: "{{ ssh_server_hardening | bool }}"
+  - id: sshd.revokedkeys
+    type: command
+    command: ["{{ sshd_path }}", "-T"]
+    key: revokedkeys
+    expected: /etc/ssh/revoked_keys
+    enabled: "{{ ssh_server_hardening | bool }}"
+  - id: sshd.ciphers
+    type: command
+    command: ["{{ sshd_path }}", "-T"]
+    key: ciphers
+    expected: "{{ ssh_ciphers | default([]) | join(',') }}"
+    enabled: "{{ ssh_server_hardening | bool and ssh_ciphers | default([]) | length > 0 }}"
+  - id: sshd.macs
+    type: command
+    command: ["{{ sshd_path }}", "-T"]
+    key: macs
+    expected: "{{ ssh_macs | default([]) | join(',') }}"
+    enabled: "{{ ssh_server_hardening | bool and ssh_macs | default([]) | length > 0 }}"
+  - id: sshd.kexalgorithms
+    type: command
+    command: ["{{ sshd_path }}", "-T"]
+    key: kexalgorithms
+    expected: "{{ ssh_kex | default([]) | join(',') }}"
+    enabled: "{{ ssh_server_hardening | bool and ssh_kex | default([]) | length > 0 }}"
+  - id: sshd.hostkeyalgorithms
+    type: command
+    command: ["{{ sshd_path }}", "-T"]
+    key: hostkeyalgorithms
+    expected: "{{ ssh_host_key_algorithms | join(',') }}"
+    enabled: "{{ ssh_server_hardening | bool and ssh_host_key_algorithms | length > 0 }}"

@@ -1,0 +1,14 @@
+---
+# Shared pre/post hardening audit settings. The role is normally included by
+# os_hardening, ssh_hardening, mysql_hardening and nginx_hardening.
+hardening_audit_enabled: true
+hardening_audit_fail_on_noncompliance: false
+hardening_audit_report_file: /var/log/devsec-hardening/hardening-baseline.json
+hardening_audit_command_timeout: 30
+hardening_audit_show_summary: true
+hardening_audit_fetch_report: false
+hardening_audit_controller_report_dir: "{{ playbook_dir }}/hardening-reports"
+hardening_audit_role_files: []
+hardening_audit_role_checks: []
+hardening_audit_role_sysctl: {}
+hardening_audit_role_file_expectations: []

@@ -1,0 +1,3 @@
+# This collection is licensed under Apache-2.0. Keep the module header
+# consistent with the collection instead of adding a GPLv3 header.
+plugins/modules/hardening_audit.py validate-modules:missing-gplv3-license

@@ -1,0 +1,33 @@
+---
+- name: Apply a small but representative hardening surface
+  hosts: all
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Work around container virtualization detection
+      ansible.builtin.set_fact:
+        ansible_virtualization_type: docker
+
+    - name: Include os_hardening role
+      ansible.builtin.include_role:
+        name: devsec.hardening.os_hardening
+  vars:
+    hardening_audit_fail_on_noncompliance: true
+    os_auditd_enabled: false
+    os_apt_enabled: false
+    os_cron_enabled: false
+    os_ctrlaltdel_disabled: false
+    os_limits_enabled: true
+    os_login_defs_enabled: true
+    os_minimize_access_enabled: false
+    os_modprobe_enabled: false
+    os_netrc_enabled: false
+    os_pam_enabled: false
+    os_profile_enabled: true
+    os_rhosts_enabled: false
+    os_securetty_enabled: false
+    os_security_suid_sgid_enforce: false
+    os_selinux_enabled: false
+    os_sysctl_enabled: true
+    os_user_accounts_enabled: false
+    os_yum_enabled: false
